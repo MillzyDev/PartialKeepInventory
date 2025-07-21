@@ -16,7 +16,7 @@ public abstract class ServerPlayerEntityMixin extends PlayerEntity {
     }
 
     @Inject(at = @At("TAIL"), method = "copyFrom")
-    void copyFromPostfix(ServerPlayerEntity oldPlayer, boolean alive, CallbackInfo info) {
+    void copyFromTail(ServerPlayerEntity oldPlayer, boolean alive, CallbackInfo info) {
         if (!alive) {
             this.getAttributes().setBaseFrom(oldPlayer.getAttributes());
             this.setHealth(oldPlayer.getMaxHealth());
