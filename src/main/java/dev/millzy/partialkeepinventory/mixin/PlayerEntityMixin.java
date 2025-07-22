@@ -2,13 +2,13 @@ package dev.millzy.partialkeepinventory.mixin;
 
 import dev.millzy.partialkeepinventory.InventoryRule;
 import dev.millzy.partialkeepinventory.PartialKeepInventory;
+import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.world.GameRules;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -58,7 +58,10 @@ public abstract class PlayerEntityMixin extends LivingEntity {
         for (int i = 0; i < PlayerInventory.OFF_HAND_SLOT + 1; i++) {
             ItemStack itemStack = this.inventory.getStack(i);
 
-            if (itemStack.isEmpty() || (itemStack.isDamageable() && itemStack.isEnchantable() && !itemStack.isStackable())) {
+            itemStack.streamTags().forEach(tag -> PartialKeepInventory.LOGGER.info(tag.id().toString()));
+
+            if (itemStack.getComponents().stream().anyMatch(
+                    c -> c.type() == DataComponentTypes.TOOL || c.type() == DataComponentTypes.EQUIPPABLE)) {
                 continue;
             }
 
@@ -67,20 +70,21 @@ public abstract class PlayerEntityMixin extends LivingEntity {
         }
     }
 
-    @Inject(at = @At("HEAD"), method = "dropInventory")
+    @Inject(at = @At("HEAD"), method = "dropInventory", cancellable = true)
     void dropInventoryHead(ServerWorld world, CallbackInfo info) {
         InventoryRule inventoryRule = world.getGameRules().get(PartialKeepInventory.RULE).get();
 
-        if (world.getGameRules().getBoolean(GameRules.KEEP_INVENTORY) || inventoryRule == InventoryRule.OFF) {
-            return;
-        }
-        else if (inventoryRule == InventoryRule.HOTBAR_AND_EQUIPMENT) {
+        if (inventoryRule == InventoryRule.HOTBAR_AND_EQUIPMENT) {
             dropInventoryNoHotbar();
         }
         else if (inventoryRule == InventoryRule.TOOLS_AND_EQUIPMENT) {
             dropInventoryNoTools();
         }
 
-        this.vanishCursedItems();
+        if (inventoryRule != InventoryRule.OFF) {
+            this.vanishCursedItems();
+        }
+
+        info.cancel();
     }
 }
