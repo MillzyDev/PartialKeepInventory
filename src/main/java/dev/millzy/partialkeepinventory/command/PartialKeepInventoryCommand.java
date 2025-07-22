@@ -42,7 +42,7 @@ public class PartialKeepInventoryCommand {
                     .then(
                         CommandManager.argument("feature", StringArgumentType.word())
                         .suggests(new PreservationSettingsSuggestionProvider())
-                        .executes(null) // TODO: Remove feature
+                        //.executes(null) // TODO: Remove feature
                     )
                 )
             )
@@ -53,14 +53,14 @@ public class PartialKeepInventoryCommand {
                     CommandManager.literal("add")
                     .then(
                         CommandManager.argument("item", ItemStackArgumentType.itemStack(registryAccess))
-                        .executes(null) // TODO: Add item to list
+                        //.executes(null) // TODO: Add item to list
                     )
                 )
                 .then(
                     CommandManager.literal("remove")
                     .then(
                         CommandManager.argument("item", ItemStackArgumentType.itemStack(registryAccess))
-                        .executes(null) // TODO: Remove item from list
+                        //.executes(null) // TODO: Remove item from list
                     )
                 )
             );
@@ -71,7 +71,7 @@ public class PartialKeepInventoryCommand {
     private static int listFeatures(CommandContext<ServerCommandSource> context) {
         ServerWorld world = context.getSource().getWorld();
 
-        int settingsFlags = world.getAttachedOrCreate(PartialKeepInventory.PRESERVATION_SETTINGS_ATTACHMENT);
+        int settingsFlags = world.getAttachedOrCreate(PartialKeepInventory.PRESERVATION_SETTINGS_ATTACHMENT, () -> 0);
         PreservationSettingsHandler preservationSettings = new PreservationSettingsHandler(settingsFlags);
         String[] enabledSettings = preservationSettings.getValueDisplays();
         Optional<String> combinedList = Arrays.stream(enabledSettings).reduce((st, v) -> st.concat("\n").concat(v));
@@ -96,7 +96,7 @@ public class PartialKeepInventoryCommand {
 
         ServerWorld world = context.getSource().getWorld();
 
-        int settingsFlags = world.getAttachedOrCreate(PartialKeepInventory.PRESERVATION_SETTINGS_ATTACHMENT);
+        int settingsFlags = world.getAttachedOrCreate(PartialKeepInventory.PRESERVATION_SETTINGS_ATTACHMENT, () -> 0);
         PreservationSettingsHandler preservationSettings = new PreservationSettingsHandler(settingsFlags);
         preservationSettings.enableSetting(setting);
         world.setAttached(PartialKeepInventory.PRESERVATION_SETTINGS_ATTACHMENT, preservationSettings.getFlagsValue());
