@@ -1,6 +1,5 @@
 package dev.millzy.partialkeepinventory.mixin;
 
-import dev.millzy.partialkeepinventory.InventoryRule;
 import dev.millzy.partialkeepinventory.PartialKeepInventory;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.EntityType;
