@@ -5,9 +5,13 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import dev.millzy.partialkeepinventory.PartialKeepInventory;
+import dev.millzy.partialkeepinventory.PreservationSettings;
 import dev.millzy.partialkeepinventory.PreservationSettingsHandler;
 import net.minecraft.command.CommandRegistryAccess;
+import net.minecraft.command.argument.ItemStackArgument;
 import net.minecraft.command.argument.ItemStackArgumentType;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.world.ServerWorld;
@@ -30,7 +34,7 @@ public class PartialKeepInventoryCommand {
                     .then(
                         CommandManager.argument("feature", StringArgumentType.word())
                         .suggests(new PreservationSettingsSuggestionProvider())
-                        .executes(null) // TODO: Add feature
+                        .executes(PartialKeepInventoryCommand::addFeature) // TODO: Add feature
                     )
                 )
                 .then(
@@ -67,7 +71,7 @@ public class PartialKeepInventoryCommand {
     private static int listFeatures(CommandContext<ServerCommandSource> context) {
         ServerWorld world = context.getSource().getWorld();
 
-        int settingsFlags = world.getAttachedOrCreate(PartialKeepInventory.PRESERVATION_SETTINGS_ATTACHMENT, () -> 0);
+        int settingsFlags = world.getAttachedOrCreate(PartialKeepInventory.PRESERVATION_SETTINGS_ATTACHMENT);
         PreservationSettingsHandler preservationSettings = new PreservationSettingsHandler(settingsFlags);
         String[] enabledSettings = preservationSettings.getValueDisplays();
         Optional<String> combinedList = Arrays.stream(enabledSettings).reduce((st, v) -> st.concat("\n").concat(v));
@@ -82,4 +86,22 @@ public class PartialKeepInventoryCommand {
         return 0;
     }
 
+    private static int addFeature(CommandContext<ServerCommandSource> context) {
+        String feature = StringArgumentType.getString(context, "feature");
+        PreservationSettings setting = PreservationSettings.fromString(feature);
+
+        if (setting == PreservationSettings.NONE) {
+            // TODO: exception
+        }
+
+        ServerWorld world = context.getSource().getWorld();
+
+        int settingsFlags = world.getAttachedOrCreate(PartialKeepInventory.PRESERVATION_SETTINGS_ATTACHMENT);
+        PreservationSettingsHandler preservationSettings = new PreservationSettingsHandler(settingsFlags);
+        preservationSettings.enableSetting(setting);
+        world.setAttached(PartialKeepInventory.PRESERVATION_SETTINGS_ATTACHMENT, preservationSettings.getFlagsValue());
+
+        context.getSource().sendMessage(Text.of("Enabled feature: " + feature));
+        return 0;
+    }
 }
