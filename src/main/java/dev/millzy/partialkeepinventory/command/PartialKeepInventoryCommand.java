@@ -8,10 +8,7 @@ import dev.millzy.partialkeepinventory.PartialKeepInventory;
 import dev.millzy.partialkeepinventory.PreservationSettings;
 import dev.millzy.partialkeepinventory.PreservationSettingsHandler;
 import net.minecraft.command.CommandRegistryAccess;
-import net.minecraft.command.argument.ItemStackArgument;
 import net.minecraft.command.argument.ItemStackArgumentType;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.world.ServerWorld;
@@ -34,7 +31,7 @@ public class PartialKeepInventoryCommand {
                     .then(
                         CommandManager.argument("feature", StringArgumentType.word())
                         .suggests(new PreservationSettingsSuggestionProvider())
-                        .executes(PartialKeepInventoryCommand::addFeature) // TODO: Add feature
+                        .executes(PartialKeepInventoryCommand::addFeature)
                     )
                 )
                 .then(
@@ -42,7 +39,7 @@ public class PartialKeepInventoryCommand {
                     .then(
                         CommandManager.argument("feature", StringArgumentType.word())
                         .suggests(new PreservationSettingsSuggestionProvider())
-                        //.executes(null) // TODO: Remove feature
+                        .executes(PartialKeepInventoryCommand::removeFeature)
                     )
                 )
             )
@@ -102,6 +99,25 @@ public class PartialKeepInventoryCommand {
         world.setAttached(PartialKeepInventory.PRESERVATION_SETTINGS_ATTACHMENT, preservationSettings.getFlagsValue());
 
         context.getSource().sendMessage(Text.of("Enabled feature: " + feature));
+        return 0;
+    }
+
+    private static int removeFeature(CommandContext<ServerCommandSource> context) {
+        String feature = StringArgumentType.getString(context, "feature");
+        PreservationSettings setting = PreservationSettings.fromString(feature);
+
+        if (setting == PreservationSettings.NONE) {
+            // TODO: exception
+        }
+
+        ServerWorld world = context.getSource().getWorld();
+
+        int settingsFlags = world.getAttachedOrCreate(PartialKeepInventory.PRESERVATION_SETTINGS_ATTACHMENT, () -> 0);
+        PreservationSettingsHandler preservationSettings = new PreservationSettingsHandler(settingsFlags);
+        preservationSettings.disableSetting(setting);
+        world.setAttached(PartialKeepInventory.PRESERVATION_SETTINGS_ATTACHMENT, preservationSettings.getFlagsValue());
+
+        context.getSource().sendMessage(Text.of("Disabled feature: " + feature));
         return 0;
     }
 }
