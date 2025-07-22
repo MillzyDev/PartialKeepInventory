@@ -35,6 +35,9 @@ public class PreservationSettingsHandler {
             .reduce(0, (st, v) -> st | v);
     }
 
+    public EnumSet<PreservationSettings> get() {
+        return preservationSettings;
+    }
 
     public boolean getSetting(PreservationSettings setting) {
         return preservationSettings.contains(setting);

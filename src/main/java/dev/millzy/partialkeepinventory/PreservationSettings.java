@@ -6,6 +6,7 @@ import java.util.Objects;
 public enum PreservationSettings {
     NONE("none"),
     EQUIPMENT("equipment"),
+    EQUIPPABLES("equippables"),
     TOOLS("tools"),
     HOTBAR("hotbar"),
     OFFHAND("offhand"),
