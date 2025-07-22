@@ -9,6 +9,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.world.GameRules;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -70,21 +71,15 @@ public abstract class PlayerEntityMixin extends LivingEntity {
         }
     }
 
-    @Inject(at = @At("HEAD"), method = "dropInventory", cancellable = true)
+    @Inject(at = @At("TAIL"), method = "dropInventory")
     void dropInventoryHead(ServerWorld world, CallbackInfo info) {
-        InventoryRule inventoryRule = world.getGameRules().get(PartialKeepInventory.RULE).get();
-
-        if (inventoryRule == InventoryRule.HOTBAR_AND_EQUIPMENT) {
-            dropInventoryNoHotbar();
-        }
-        else if (inventoryRule == InventoryRule.TOOLS_AND_EQUIPMENT) {
-            dropInventoryNoTools();
+        if (world.getGameRules().getBoolean(GameRules.KEEP_INVENTORY) ||
+                !world.getGameRules().getBoolean(PartialKeepInventory.RULE)) {
+            return;
         }
 
-        if (inventoryRule != InventoryRule.OFF) {
-            this.vanishCursedItems();
-        }
-
-        info.cancel();
+       if (!world.getGameRules().getBoolean(PartialKeepInventory.RULE)) {
+           return;
+       }
     }
 }
