@@ -21,14 +21,17 @@ public class PreservationSettingsState extends PersistentState {
         DataFixTypes.LEVEL
     );
 
-    private int settingsFlags = 0;
-    private List<String> itemList = new ArrayList<>();
+    private int settingsFlags;
+    private List<String> itemList;
 
-    public PreservationSettingsState() {}
+    public PreservationSettingsState() {
+        this.settingsFlags = 0;
+        this.itemList = new ArrayList<>();
+    }
 
     public PreservationSettingsState(int settingsFlags, List<String> itemList) {
         this.settingsFlags = settingsFlags;
-        this.itemList = itemList;
+        this.itemList = new ArrayList<>(itemList);
     }
 
     public PreservationSettingsHandler getSettings() {
@@ -56,5 +59,25 @@ public class PreservationSettingsState extends PersistentState {
 
     public String[] getEnabledSettingNames() {
         return getSettings().getValueDisplays();
+    }
+
+    public String[] getItemsFromList() {
+        return this.itemList.toArray(new String[0]);
+    }
+
+    public void addToItemList(ItemStack item) {
+        String itemString = item.getItem().toString();
+        this.itemList.add(itemString);
+        this.markDirty();
+    }
+
+    public void removeFromItemList(ItemStack item) {
+        String itemString = item.getItem().toString();
+        this.itemList.remove(itemString);
+        this.markDirty();
+    }
+
+    public boolean isInItemList(ItemStack item) {
+        return this.itemList.contains(item.getItem().toString());
     }
 }
