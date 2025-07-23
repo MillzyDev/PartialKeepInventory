@@ -1,8 +1,11 @@
 package dev.millzy.partialkeepinventory.mixin;
 
+import dev.millzy.partialkeepinventory.InventorySlotChecker;
 import dev.millzy.partialkeepinventory.PartialKeepInventory;
+import dev.millzy.partialkeepinventory.PreservationSettingsHandler;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
@@ -10,6 +13,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.world.GameRules;
 import net.minecraft.world.World;
+import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -26,6 +30,12 @@ public abstract class PlayerEntityMixin extends LivingEntity {
     @Shadow @Final PlayerInventory inventory;
 
     @Shadow protected abstract void vanishCursedItems();
+
+    @Shadow public abstract PlayerInventory getInventory();
+
+    @Shadow @Nullable public abstract ItemEntity dropItem(ItemStack stack, boolean retainOwnership);
+
+    private final int MAX_SLOT = PlayerInventory.MAIN_SIZE + PlayerInventory.EQUIPMENT_SLOTS.size();
 
     protected PlayerEntityMixin(EntityType<? extends LivingEntity> entityType, World world) {
         super(entityType, world);
@@ -70,15 +80,30 @@ public abstract class PlayerEntityMixin extends LivingEntity {
         }
     }
 
-    @Inject(at = @At("TAIL"), method = "dropInventory")
+    @Inject(at = @At("HEAD"), method = "dropInventory", cancellable = true)
     void dropInventoryHead(ServerWorld world, CallbackInfo info) {
-        if (world.getGameRules().getBoolean(GameRules.KEEP_INVENTORY) ||
-                !world.getGameRules().getBoolean(PartialKeepInventory.RULE)) {
+        super.dropInventory(world);
+
+        if (!world.getGameRules().getBoolean(PartialKeepInventory.RULE)) {
             return;
         }
 
-       if (!world.getGameRules().getBoolean(PartialKeepInventory.RULE)) {
-           return;
-       }
+        if (!world.getGameRules().getBoolean(GameRules.KEEP_INVENTORY) &&
+                world.getGameRules().getBoolean(PartialKeepInventory.RULE)) {
+            info.cancel();
+        }
+
+        int settingsFlags = world.getAttachedOrCreate(PartialKeepInventory.PRESERVATION_SETTINGS_ATTACHMENT, () -> 0);
+        PreservationSettingsHandler preservationSettings = new PreservationSettingsHandler(settingsFlags);
+
+        for (int i = 0; i < MAX_SLOT; i++) {
+            if (!InventorySlotChecker.shouldDrop(this.inventory, i, preservationSettings)) {
+                continue;
+            }
+
+            ItemStack itemStack = this.inventory.getStack(i);
+            this.dropItem(itemStack, true, false);
+            this.inventory.setStack(i, ItemStack.EMPTY);
+        }
     }
 }
