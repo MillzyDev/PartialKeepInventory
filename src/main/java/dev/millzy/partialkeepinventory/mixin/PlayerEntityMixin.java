@@ -1,9 +1,9 @@
 package dev.millzy.partialkeepinventory.mixin;
 
-import dev.millzy.partialkeepinventory.InventorySlotChecker;
-import dev.millzy.partialkeepinventory.PartialKeepInventory;
-import dev.millzy.partialkeepinventory.PreservationSettings;
-import dev.millzy.partialkeepinventory.PreservationSettingsHandler;
+import com.mojang.serialization.Codec;
+import dev.millzy.partialkeepinventory.*;
+import net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry;
+import net.fabricmc.fabric.api.attachment.v1.AttachmentType;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -35,10 +35,9 @@ public abstract class PlayerEntityMixin extends LivingEntity {
 
     @Inject(at = @At("HEAD"), method = "getExperienceToDrop", cancellable = true)
     private void getExperienceToDropHead(ServerWorld world, CallbackInfoReturnable<Integer> info) {
-        int settingsFlags = world.getAttachedOrCreate(PartialKeepInventory.PRESERVATION_SETTINGS_ATTACHMENT, () -> 0);
-        PreservationSettingsHandler preservationSettings = new PreservationSettingsHandler(settingsFlags);
+        PreservationSettingsState settingsState = world.getPersistentStateManager().getOrCreate(PreservationSettingsState.ID);
 
-        boolean preserveExperience = preservationSettings.getSetting(PreservationSettings.EXPERIENCE);
+        boolean preserveExperience = settingsState.getSetting(PreservationSettings.EXPERIENCE);
         int ret = !preserveExperience && !this.isSpectator() ? Math.min(this.experienceLevel * 7, 100) : 0;
         info.setReturnValue(ret);
     }
@@ -56,11 +55,10 @@ public abstract class PlayerEntityMixin extends LivingEntity {
             info.cancel();
         }
 
-        int settingsFlags = world.getAttachedOrCreate(PartialKeepInventory.PRESERVATION_SETTINGS_ATTACHMENT, () -> 0);
-        PreservationSettingsHandler preservationSettings = new PreservationSettingsHandler(settingsFlags);
+        PreservationSettingsState settingsState = world.getPersistentStateManager().getOrCreate(PreservationSettingsState.ID);
 
         for (int i = 0; i < MAX_SLOT; i++) {
-            if (!InventorySlotChecker.shouldDrop(this.inventory, i, preservationSettings)) {
+            if (!InventorySlotChecker.shouldDrop(this.inventory, i, settingsState.getSettings())) {
                 continue;
             }
 

@@ -7,6 +7,7 @@ import com.mojang.brigadier.context.CommandContext;
 import dev.millzy.partialkeepinventory.PartialKeepInventory;
 import dev.millzy.partialkeepinventory.PreservationSettings;
 import dev.millzy.partialkeepinventory.PreservationSettingsHandler;
+import dev.millzy.partialkeepinventory.PreservationSettingsState;
 import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.command.argument.ItemStackArgumentType;
 import net.minecraft.server.command.CommandManager;
@@ -68,9 +69,8 @@ public class PartialKeepInventoryCommand {
     private static int listFeatures(CommandContext<ServerCommandSource> context) {
         ServerWorld world = context.getSource().getWorld();
 
-        int settingsFlags = world.getAttachedOrCreate(PartialKeepInventory.PRESERVATION_SETTINGS_ATTACHMENT, () -> 0);
-        PreservationSettingsHandler preservationSettings = new PreservationSettingsHandler(settingsFlags);
-        String[] enabledSettings = preservationSettings.getValueDisplays();
+        PreservationSettingsState settingsState = world.getPersistentStateManager().getOrCreate(PreservationSettingsState.ID);
+        String[] enabledSettings = settingsState.getEnabledSettingNames();
         Optional<String> combinedList = Arrays.stream(enabledSettings).reduce((st, v) -> st.concat("\n").concat(v));
 
         Text message;
@@ -93,10 +93,9 @@ public class PartialKeepInventoryCommand {
 
         ServerWorld world = context.getSource().getWorld();
 
-        int settingsFlags = world.getAttachedOrCreate(PartialKeepInventory.PRESERVATION_SETTINGS_ATTACHMENT, () -> 0);
-        PreservationSettingsHandler preservationSettings = new PreservationSettingsHandler(settingsFlags);
-        preservationSettings.enableSetting(setting);
-        world.setAttached(PartialKeepInventory.PRESERVATION_SETTINGS_ATTACHMENT, preservationSettings.getFlagsValue());
+        PreservationSettingsState settingsState = world.getPersistentStateManager().getOrCreate(PreservationSettingsState.ID);
+        settingsState.enableSetting(setting);
+        world.getPersistentStateManager().set(PreservationSettingsState.ID, settingsState);
 
         context.getSource().sendMessage(Text.of("Enabled feature: " + feature));
         return 0;
@@ -112,10 +111,9 @@ public class PartialKeepInventoryCommand {
 
         ServerWorld world = context.getSource().getWorld();
 
-        int settingsFlags = world.getAttachedOrCreate(PartialKeepInventory.PRESERVATION_SETTINGS_ATTACHMENT, () -> 0);
-        PreservationSettingsHandler preservationSettings = new PreservationSettingsHandler(settingsFlags);
-        preservationSettings.disableSetting(setting);
-        world.setAttached(PartialKeepInventory.PRESERVATION_SETTINGS_ATTACHMENT, preservationSettings.getFlagsValue());
+        PreservationSettingsState settingsState = world.getPersistentStateManager().getOrCreate(PreservationSettingsState.ID);
+        settingsState.disableSetting(setting);
+        world.getPersistentStateManager().set(PreservationSettingsState.ID, settingsState);
 
         context.getSource().sendMessage(Text.of("Disabled feature: " + feature));
         return 0;
