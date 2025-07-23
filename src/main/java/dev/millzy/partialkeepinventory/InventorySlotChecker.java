@@ -2,9 +2,11 @@ package dev.millzy.partialkeepinventory;
 
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.Rarity;
 
 import java.util.HashMap;
+import java.util.Objects;
 import java.util.function.BiPredicate;
 
 public class InventorySlotChecker {
@@ -57,8 +59,10 @@ public class InventorySlotChecker {
     }
 
     private static boolean isInItemList(PlayerInventory inventory, int slot) {
-        // TODO
-        return false;
+        ServerWorld overworld = Objects.requireNonNull(inventory.player.getServer()).getOverworld();
+        PreservationSettingsState settingsState = overworld.getPersistentStateManager().getOrCreate(PreservationSettingsState.ID);
+
+        return settingsState.isInItemList(inventory.getStack(slot));
     }
 
     static {
