@@ -16,6 +16,10 @@ public class PreservationSettingsSuggestionProvider implements SuggestionProvide
     @Override
     public CompletableFuture<Suggestions> getSuggestions(CommandContext<ServerCommandSource> context, SuggestionsBuilder builder) throws CommandSyntaxException {
         for (PreservationSettings setting : PreservationSettingsHandler.ALL_SETTINGS) {
+            if (!CommandSource.shouldSuggest(builder.getRemaining(), setting.getDisplay())) {
+               continue;
+            }
+
             builder.suggest(setting.getDisplay());
         }
 
