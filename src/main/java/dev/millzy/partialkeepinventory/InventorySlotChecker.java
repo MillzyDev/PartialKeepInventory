@@ -2,79 +2,79 @@ package dev.millzy.partialkeepinventory;
 
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.Rarity;
 
 import java.util.HashMap;
-import java.util.Objects;
-import java.util.function.BiPredicate;
+import java.util.function.Predicate;
 
 public class InventorySlotChecker {
-    private final static HashMap<PreservationSettings, BiPredicate<PlayerInventory, Integer>> SLOT_CHECKERS = new HashMap<>();
+    private final HashMap<PreservationSettings, Predicate<Integer>> slotCheckers = new HashMap<>();
+    private final PlayerInventory inventory;
+    private final PreservationSettingsState preservationSettings;
 
-    public static boolean shouldDrop(PlayerInventory inventory, int slot, PreservationSettingsHandler preservationSettings) {
+    public InventorySlotChecker(PlayerInventory inventory, PreservationSettingsState preservationSettings) {
+        this.inventory = inventory;
+        this.preservationSettings = preservationSettings;
+
+        this.slotCheckers.put(PreservationSettings.EQUIPMENT, this::isEquipment);
+        this.slotCheckers.put(PreservationSettings.EQUIPPABLES, this::isEquippable);
+        this.slotCheckers.put(PreservationSettings.TOOLS, this::isTool);
+        this.slotCheckers.put(PreservationSettings.HOTBAR, this::isHotbar);
+        this.slotCheckers.put(PreservationSettings.OFFHAND, this::isOffhand);
+        this.slotCheckers.put(PreservationSettings.EPIC_ITEMS, this::isEpicRarity);
+        this.slotCheckers.put(PreservationSettings.RARE_ITEMS, this::isRareRarity);
+        this.slotCheckers.put(PreservationSettings.UNCOMMON_ITEMS, this::isUncommonRarity);
+        this.slotCheckers.put(PreservationSettings.COMMON_ITEMS, this::isCommonRarity);
+        this.slotCheckers.put(PreservationSettings.CUSTOM_LIST, this::isInItemList);
+    }
+
+    public boolean shouldDrop(int slot) {
         boolean shouldNotDrop = false;
 
-        for (PreservationSettings setting : preservationSettings.get()) {
-            shouldNotDrop |= SLOT_CHECKERS.getOrDefault(setting, (t, u) -> false).test(inventory, slot);
+        for (PreservationSettings setting : this.preservationSettings.getSettings().get()) {
+            shouldNotDrop |= this.slotCheckers.getOrDefault(setting, (u) -> false).test(slot);
         }
 
         return !shouldNotDrop;
     }
 
-    private static boolean isEquipment(PlayerInventory inventory, int slot) {
+    private boolean isEquipment(int slot) {
         return PlayerInventory.EQUIPMENT_SLOTS.containsKey(slot);
     }
 
-    private static boolean isEquippable(PlayerInventory inventory, int slot) {
-        return inventory.getStack(slot).contains(DataComponentTypes.EQUIPPABLE);
+    private boolean isEquippable(int slot) {
+        return this.inventory.getStack(slot).contains(DataComponentTypes.EQUIPPABLE);
     }
 
-    private static boolean isTool(PlayerInventory inventory, int slot) {
-        return inventory.getStack(slot).contains(DataComponentTypes.TOOL);
+    private boolean isTool(int slot) {
+        return this.inventory.getStack(slot).contains(DataComponentTypes.TOOL);
     }
 
-    private static boolean isHotbar(PlayerInventory inventory, int slot) {
+    private boolean isHotbar(int slot) {
         return slot < 9;
     }
 
-    private static boolean isOffhand(PlayerInventory inventory, int slot) {
+    private boolean isOffhand(int slot) {
         return slot == PlayerInventory.OFF_HAND_SLOT;
     }
 
-    private static boolean isEpicRarity(PlayerInventory inventory, int slot) {
-        return inventory.getStack(slot).getRarity() == Rarity.EPIC;
+    private boolean isEpicRarity(int slot) {
+        return this.inventory.getStack(slot).getRarity() == Rarity.EPIC;
     }
 
-    private static boolean isRareRarity(PlayerInventory inventory, int slot) {
-        return inventory.getStack(slot).getRarity() == Rarity.RARE;
+    private boolean isRareRarity(int slot) {
+        return this.inventory.getStack(slot).getRarity() == Rarity.RARE;
     }
 
-    private static boolean isUncommonRarity(PlayerInventory inventory, int slot) {
-        return inventory.getStack(slot).getRarity() == Rarity.UNCOMMON;
+    private boolean isUncommonRarity(int slot) {
+        return this.inventory.getStack(slot).getRarity() == Rarity.UNCOMMON;
     }
 
-    private static boolean isCommonRarity(PlayerInventory inventory, int slot) {
-        return inventory.getStack(slot).getRarity() == Rarity.COMMON;
+    private boolean isCommonRarity(int slot) {
+        return this.inventory.getStack(slot).getRarity() == Rarity.COMMON;
     }
 
-    private static boolean isInItemList(PlayerInventory inventory, int slot) {
-        ServerWorld overworld = Objects.requireNonNull(inventory.player.getServer()).getOverworld();
-        PreservationSettingsState settingsState = overworld.getPersistentStateManager().getOrCreate(PreservationSettingsState.ID);
-
-        return settingsState.isInItemList(inventory.getStack(slot));
-    }
-
-    static {
-        SLOT_CHECKERS.put(PreservationSettings.EQUIPMENT, InventorySlotChecker::isEquipment);
-        SLOT_CHECKERS.put(PreservationSettings.EQUIPPABLES, InventorySlotChecker::isEquippable);
-        SLOT_CHECKERS.put(PreservationSettings.TOOLS, InventorySlotChecker::isTool);
-        SLOT_CHECKERS.put(PreservationSettings.HOTBAR, InventorySlotChecker::isHotbar);
-        SLOT_CHECKERS.put(PreservationSettings.OFFHAND, InventorySlotChecker::isOffhand);
-        SLOT_CHECKERS.put(PreservationSettings.EPIC_ITEMS, InventorySlotChecker::isEpicRarity);
-        SLOT_CHECKERS.put(PreservationSettings.RARE_ITEMS, InventorySlotChecker::isRareRarity);
-        SLOT_CHECKERS.put(PreservationSettings.UNCOMMON_ITEMS, InventorySlotChecker::isUncommonRarity);
-        SLOT_CHECKERS.put(PreservationSettings.COMMON_ITEMS, InventorySlotChecker::isCommonRarity);
-        SLOT_CHECKERS.put(PreservationSettings.CUSTOM_LIST, InventorySlotChecker::isInItemList);
+    private boolean isInItemList(int slot) {
+        return this.preservationSettings.isInItemList(inventory.getStack(slot));
     }
 }
