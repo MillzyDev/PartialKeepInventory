@@ -22,7 +22,7 @@ public class PreservationSettingsState extends PersistentState {
     );
 
     private int settingsFlags;
-    private List<String> itemList;
+    private final List<String> itemList;
 
     public PreservationSettingsState() {
         this.settingsFlags = 0;
