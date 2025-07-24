@@ -1,9 +1,6 @@
 package dev.millzy.partialkeepinventory.mixin;
 
-import com.mojang.serialization.Codec;
 import dev.millzy.partialkeepinventory.*;
-import net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry;
-import net.fabricmc.fabric.api.attachment.v1.AttachmentType;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -15,6 +12,7 @@ import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -27,7 +25,7 @@ public abstract class PlayerEntityMixin extends LivingEntity {
 
     @Shadow protected abstract void vanishCursedItems();
 
-    private final int MAX_SLOT = PlayerInventory.MAIN_SIZE + PlayerInventory.EQUIPMENT_SLOTS.size();
+    @Unique private final int MAX_SLOT = PlayerInventory.MAIN_SIZE + PlayerInventory.EQUIPMENT_SLOTS.size();
 
     protected PlayerEntityMixin(EntityType<? extends LivingEntity> entityType, World world) {
         super(entityType, world);
@@ -56,9 +54,10 @@ public abstract class PlayerEntityMixin extends LivingEntity {
         }
 
         PreservationSettingsState settingsState = world.getPersistentStateManager().getOrCreate(PreservationSettingsState.ID);
+        InventorySlotChecker slotChecker = new InventorySlotChecker(this.inventory, settingsState);
 
         for (int i = 0; i < MAX_SLOT; i++) {
-            if (!InventorySlotChecker.shouldDrop(this.inventory, i, settingsState.getSettings())) {
+            if (!slotChecker.shouldDrop(i)) {
                 continue;
             }
 
